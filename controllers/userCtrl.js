@@ -81,7 +81,19 @@ const authController = async (req, res) => {
 
 const applyDoctorController = async (req, res) => {
   try {
-    const newDoctor = await doctorModel({ ...req.body, status: "pending" });
+    const { timings, ...doctorData } = req.body;
+    const formattedTimings = timings.map((time) =>
+      moment(time, "HH:mm").format("HH:mm")
+    );
+
+    // Create a new doctor instance with timings included
+    const newDoctor = new doctorModel({
+      ...doctorData,
+      timings: formattedTimings,
+      status: "pending",
+    });
+
+    // const newDoctor = await doctorModel({ ...req.body, status: "pending" });
     await newDoctor.save();
     const adminUser = await userModel.findOne({ isAdmin: true });
     const notification = adminUser.notification || [];
@@ -90,7 +102,7 @@ const applyDoctorController = async (req, res) => {
       message: `${newDoctor.firstName} ${newDoctor.lastName} Has Applied For A Doctor Account`,
       data: {
         doctorId: newDoctor._id,
-        name: newDoctor.firstName + " " + newDoctor.lastName,
+        name: `${newDoctor.firstName}+" "+ ${newDoctor.lastName}`,
         onClickPath: "/admin/doctors",
       },
     });
@@ -191,7 +203,7 @@ const bookAppointmentController = async (req, res) => {
     user.notification.push({
       type: "new-appointment-request",
       message: `A new appointment request has been made by ${req.body.userInfo.name}`,
-      onClickPath: "/doctor/appointments",
+      onClickPath: "/doctor/user-appointments",
     });
     await user.save();
 
